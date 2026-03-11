@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rummy Scorekeeper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --felt: #1a3a2a;
+    --felt-light: #1f4433;
+    --felt-border: #2e5c42;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --cream: #f5eed6;
+    --cream-muted: #d4c89a;
+    --red: #c0392b;
+    --red-bright: #e74c3c;
+    --white: #fdf8ed;
+    --shadow: rgba(0,0,0,0.5);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--felt);
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(46,92,66,0.6) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(20,50,35,0.8) 0%, transparent 60%),
+      repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.01) 4px, rgba(255,255,255,0.01) 5px);
+    min-height: 100vh;
+    font-family: 'DM Mono', monospace;
+    color: var(--cream);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 16px 60px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 20px rgba(201,168,76,0.4), 0 0 60px rgba(201,168,76,0.1);
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--cream-muted);
+    margin-bottom: 36px;
+    opacity: 0.7;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--felt-border);
+    border-radius: 12px;
+    padding: 28px;
+    width: 100%;
+    max-width: 560px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+    opacity: 0.85;
+  }
+
+  select, input[type="number"], input[type="text"] {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--felt-border);
+    border-radius: 6px;
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  select:focus, input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(201,168,76,0.15);
+  }
+  select option { background: #1a3a2a; }
+
+  .row { display: flex; gap: 14px; margin-bottom: 18px; }
+  .col { flex: 1; }
+
+  .player-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .btn {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+    color: #1a1a0a;
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 4px 14px rgba(201,168,76,0.25);
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.35); }
+  .btn:active { transform: translateY(0); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--cream-muted);
+    border: 1px solid var(--felt-border);
+    box-shadow: none;
+  }
+  .btn.secondary:hover { border-color: var(--cream-muted); color: var(--cream); }
+  .btn.danger {
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-bright) 100%);
+    color: white;
+    box-shadow: 0 4px 14px rgba(192,57,43,0.3);
+  }
+  .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* SCOREBOARD */
+  .scoreboard { width: 100%; max-width: 700px; }
+
+  .round-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .round-label span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--cream-muted);
+    margin-left: 10px;
+    letter-spacing: 2px;
+  }
+
+  /* Score entry row */
+  .score-entry-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .player-name-tag {
+    flex: 1;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    color: var(--cream);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .score-entry-row input {
+    width: 90px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  /* Totals table */
+  .totals-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+  }
+  .totals-table th {
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--felt-border);
+  }
+  .totals-table th:not(:first-child) { text-align: center; }
+  .totals-table td {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+  .totals-table td:not(:first-child) { text-align: center; }
+  .totals-table tr:last-child td { border-bottom: none; }
+  .totals-table .total-cell {
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--gold-light);
+  }
+  .totals-table .losing-row td { color: var(--red-bright); }
+  .totals-table .leading-row td:first-child::after {
+    content: ' ♣';
+    color: var(--gold);
+    font-size: 0.7rem;
+  }
+
+  .history-score {
+    font-size: 0.72rem;
+    color: var(--cream-muted);
+    opacity: 0.7;
+  }
+  .history-score.this-round { color: var(--cream); opacity: 1; font-weight: 500; }
+
+  /* Alert banner */
+  .alert {
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    line-height: 1.6;
+    margin-top: 18px;
+    animation: fadeIn 0.3s ease;
+  }
+  .alert.warning {
+    background: rgba(192,57,43,0.2);
+    border: 1px solid rgba(231,76,60,0.4);
+    color: #f9b0a8;
+  }
+  .alert.info {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold-light);
+  }
+  .alert strong { display: block; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+
+  /* Winner screen */
+  .winner-screen { text-align: center; padding: 10px 0 20px; }
+  .winner-crown { font-size: 3rem; margin-bottom: 8px; }
+  .winner-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(201,168,76,0.5);
+  }
+  .winner-sub { font-size: 0.7rem; letter-spacing: 4px; color: var(--cream-muted); text-transform: uppercase; margin: 6px 0 20px; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--felt-border), transparent);
+    margin: 20px 0;
+  }
+
+  .phase { display: none; }
+  .phase.active { display: block; }
+
+  /* Round history pills */
+  .round-pill {
+    display: inline-block;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--felt-border);
+    border-radius: 20px;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    color: var(--cream-muted);
+    margin-right: 4px;
+    margin-bottom: 2px;
+  }
+</style>
+</head>
+<body>
+
+<h1>♣ Rummy ♠</h1>
+<p class="subtitle">Scorekeeper</p>
+
+<!-- SETUP PHASE -->
+<div id="setupPhase" class="phase active card" style="max-width:480px;width:100%;">
+  <div class="row">
+    <div class="col">
+      <label>Number of Players</label>
+      <select id="numPlayers" onchange="updatePlayerInputs()">
+        <option value="2">2 Players</option>
+        <option value="3">3 Players</option>
+        <option value="4">4 Players</option>
+      </select>
+    </div>
+    <div class="col">
+      <label>Game Type</label>
+      <select id="gameType" onchange="toggleGameType()">
+        <option value="rounds">Set Rounds</option>
+        <option value="score">Max Score</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="roundsOption">
+    <label>Number of Rounds</label>
+    <input type="number" id="maxRounds" value="10" min="1" max="50" style="margin-bottom:18px;">
+  </div>
+  <div id="scoreOption" style="display:none;">
+    <label>Losing Score (player reaches this = game over)</label>
+    <input type="number" id="maxScore" value="500" min="50" max="5000" style="margin-bottom:18px;">
+  </div>
+
+  <label>Player Names</label>
+  <div class="player-grid" id="playerGrid"></div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="startGame()">Deal In →</button>
+  </div>
+</div>
+
+<!-- GAME PHASE -->
+<div id="gamePhase" class="phase scoreboard">
+  <div class="card">
+    <div id="roundLabel" class="round-label">Round 1 <span>ENTER SCORES</span></div>
+
+    <div id="scoreInputs"></div>
+
+    <div id="roundAlerts"></div>
+
+    <div class="btn-row">
+      <button class="btn secondary" onclick="resetGame()">New Game</button>
+      <button class="btn" onclick="submitRound()">Submit Round →</button>
+    </div>
+  </div>
+
+  <div class="card" id="totalsCard" style="display:none;">
+    <label>Scoreboard</label>
+    <table class="totals-table" id="totalsTable"></table>
+  </div>
+</div>
+
+<!-- WINNER PHASE -->
+<div id="winnerPhase" class="phase card" style="max-width:480px;width:100%;text-align:center;">
+  <div class="winner-screen">
+    <div class="winner-crown">🏆</div>
+    <div id="winnerName" class="winner-name"></div>
+    <div class="winner-sub">Wins the game!</div>
+    <div id="winnerDetails" style="font-size:0.78rem;color:var(--cream-muted);line-height:1.8;"></div>
+    <div style="margin-top:28px;">
+      <button class="btn" onclick="resetGame()">New Game</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let state = {
+    players: [],
+    scores: [], // scores[playerIndex] = [round1score, round2score, ...]
+    currentRound: 1,
+    gameType: 'rounds',
+    maxRounds: 10,
+    maxScore: 500,
+  };
+
+  function updatePlayerInputs() {
+    const n = parseInt(document.getElementById('numPlayers').value);
+    const grid = document.getElementById('playerGrid');
+    // Keep existing names
+    const existing = Array.from(grid.querySelectorAll('input')).map(i => i.value);
+    grid.innerHTML = '';
+    const defaults = ['Alice', 'Bob', 'Carol', 'Dave'];
+    for (let i = 0; i < n; i++) {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.placeholder = defaults[i];
+      inp.value = existing[i] || '';
+      inp.id = `playerName_${i}`;
+      grid.appendChild(inp);
+    }
+  }
+
+  function toggleGameType() {
+    const t = document.getElementById('gameType').value;
+    document.getElementById('roundsOption').style.display = t === 'rounds' ? '' : 'none';
+    document.getElementById('scoreOption').style.display = t === 'score' ? '' : 'none';
+  }
+
+  function startGame() {
+    const n = parseInt(document.getElementById('numPlayers').value);
+    const defaults = ['Alice', 'Bob', 'Carol', 'Dave'];
+    const players = [];
+    for (let i = 0; i < n; i++) {
+      const v = document.getElementById(`playerName_${i}`).value.trim();
+      players.push(v || defaults[i]);
+    }
+    state.players = players;
+    state.scores = players.map(() => []);
+    state.currentRound = 1;
+    state.gameType = document.getElementById('gameType').value;
+    state.maxRounds = parseInt(document.getElementById('maxRounds').value) || 10;
+    state.maxScore = parseInt(document.getElementById('maxScore').value) || 500;
+
+    showPhase('gamePhase');
+    renderRound();
+  }
+
+  function showPhase(id) {
+    document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function renderRound() {
+    const label = state.gameType === 'rounds'
+      ? `Round ${state.currentRound} / ${state.maxRounds}`
+      : `Round ${state.currentRound}`;
+    document.getElementById('roundLabel').innerHTML =
+      `<span style="font-family:Playfair Display,serif;">${label}</span> <span>ENTER SCORES</span>`;
+
+    const container = document.getElementById('scoreInputs');
+    container.innerHTML = '';
+    state.players.forEach((name, i) => {
+      const total = state.scores[i].reduce((a, b) => a + b, 0);
+      const row = document.createElement('div');
+      row.className = 'score-entry-row';
+      row.innerHTML = `
+        <div class="player-name-tag">${name} <span style="color:var(--cream-muted);font-size:0.7rem;">(${total} pts)</span></div>
+        <input type="number" id="score_${i}" placeholder="0" min="0" style="width:90px;text-align:center;" />
+      `;
+      container.appendChild(row);
+    });
+
+    document.getElementById('roundAlerts').innerHTML = '';
+    renderTotals(false);
+  }
+
+  function submitRound() {
+    // Collect scores
+    const roundScores = [];
+    for (let i = 0; i < state.players.length; i++) {
+      const val = parseInt(document.getElementById(`score_${i}`).value);
+      if (isNaN(val) || val < 0) {
+        document.getElementById(`score_${i}`).focus();
+        document.getElementById('roundAlerts').innerHTML =
+          `<div class="alert warning"><strong>⚠ Missing Score</strong>Please enter a valid score for all players.</div>`;
+        return;
+      }
+      roundScores.push(val);
+    }
+
+    // Save scores
+    roundScores.forEach((s, i) => state.scores[i].push(s));
+
+    // Compute totals
+    const totals = state.players.map((_, i) => state.scores[i].reduce((a, b) => a + b, 0));
+    const alerts = [];
+    const alertsDiv = document.getElementById('roundAlerts');
+    alertsDiv.innerHTML = '';
+
+    if (state.gameType === 'score') {
+      // Check who hit or exceeded max score
+      const losers = state.players.filter((_, i) => totals[i] >= state.maxScore);
+      if (losers.length > 0) {
+        // Game over — find winner (lowest score)
+        showWinner(totals);
+        return;
+      }
+      // Warn players close to limit
+      const warning = [];
+      state.players.forEach((name, i) => {
+        if (totals[i] >= state.maxScore * 0.8) {
+          warning.push(`${name} is at ${totals[i]} pts — dangerously close to ${state.maxScore}!`);
+        }
+      });
+      if (warning.length) {
+        alertsDiv.innerHTML += `<div class="alert warning"><strong>⚠ Getting Close</strong>${warning.join('<br>')}</div>`;
+      }
+    }
+
+    if (state.gameType === 'rounds' && state.currentRound >= state.maxRounds) {
+      // Game over
+      showWinner(totals);
+      return;
+    }
+
+    // Round summary alert
+    const highRound = Math.max(...roundScores);
+    const highNames = state.players.filter((_, i) => roundScores[i] === highRound);
+    const lowRound = Math.min(...roundScores);
+    const lowNames = state.players.filter((_, i) => roundScores[i] === lowRound);
+    let summaryHtml = `<strong>✓ Round ${state.currentRound} Recorded</strong>`;
+    summaryHtml += `High scorer: <strong>${highNames.join(', ')}</strong> (${highRound} pts) &nbsp;·&nbsp; Low scorer: <strong>${lowNames.join(', ')}</strong> (${lowRound} pts)`;
+    alertsDiv.innerHTML += `<div class="alert info">${summaryHtml}</div>`;
+
+    state.currentRound++;
+    renderTotals(true);
+
+    // Update round label
+    const label = state.gameType === 'rounds'
+      ? `Round ${state.currentRound} / ${state.maxRounds}`
+      : `Round ${state.currentRound}`;
+    document.getElementById('roundLabel').innerHTML =
+      `<span style="font-family:Playfair Display,serif;">${label}</span> <span>ENTER SCORES</span>`;
+
+    // Clear inputs
+    for (let i = 0; i < state.players.length; i++) {
+      const inp = document.getElementById(`score_${i}`);
+      if (inp) {
+        inp.value = '';
+        const row = inp.closest('.score-entry-row');
+        row.querySelector('.player-name-tag').innerHTML =
+          `${state.players[i]} <span style="color:var(--cream-muted);font-size:0.7rem;">(${totals[i]} pts)</span>`;
+      }
+    }
+  }
+
+  function renderTotals(show) {
+    if (state.scores[0].length === 0) return;
+
+    const totalsCard = document.getElementById('totalsCard');
+    totalsCard.style.display = show ? '' : 'none';
+    if (!show) return;
+
+    const totals = state.players.map((_, i) => state.scores[i].reduce((a, b) => a + b, 0));
+    const minTotal = Math.min(...totals);
+    const maxTotal = Math.max(...totals);
+    const numRounds = state.scores[0].length;
+
+    let html = '<thead><tr><th>Player</th>';
+    for (let r = 1; r <= numRounds; r++) html += `<th>R${r}</th>`;
+    html += '<th>Total</th></tr></thead><tbody>';
+
+    state.players.forEach((name, i) => {
+      const total = totals[i];
+      const isLosing = state.gameType === 'score' && total >= state.maxScore * 0.8;
+      const isLeading = total === minTotal;
+      html += `<tr class="${isLosing ? 'losing-row' : ''} ${isLeading ? 'leading-row' : ''}">`;
+      html += `<td>${name}</td>`;
+      for (let r = 0; r < numRounds; r++) {
+        html += `<td class="history-score ${r === numRounds - 1 ? 'this-round' : ''}">${state.scores[i][r]}</td>`;
+      }
+      html += `<td class="total-cell">${total}</td></tr>`;
+    });
+
+    html += '</tbody>';
+    document.getElementById('totalsTable').innerHTML = html;
+  }
+
+  function showWinner(totals) {
+    // Lowest score wins in rummy
+    const minTotal = Math.min(...totals);
+    const winners = state.players.filter((_, i) => totals[i] === minTotal);
+    const winnerName = winners.join(' & ');
+
+    document.getElementById('winnerName').textContent = winnerName;
+
+    let details = '';
+    const sorted = state.players.map((name, i) => ({ name, total: totals[i] }))
+      .sort((a, b) => a.total - b.total);
+    sorted.forEach((p, idx) => {
+      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '  ';
+      details += `${medal} ${p.name}: ${p.total} pts<br>`;
+    });
+    document.getElementById('winnerDetails').innerHTML = details;
+
+    showPhase('winnerPhase');
+  }
+
+  function resetGame() {
+    state = { players: [], scores: [], currentRound: 1, gameType: 'rounds', maxRounds: 10, maxScore: 500 };
+    document.getElementById('totalsCard').style.display = 'none';
+    showPhase('setupPhase');
+  }
+
+  // Init
+  updatePlayerInputs();
+</script>
+</body>
+</html>
